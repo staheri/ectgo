@@ -4,7 +4,7 @@ Details of the idea and design is under review in 6th Workshop on Formal Integra
 
 
 ## Overview
-![Overview](overview.pdf)
+![Overview](overview.png)
 
 
 ## Install
