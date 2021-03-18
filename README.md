@@ -13,6 +13,8 @@ Please refer to [goatlib](https://github.com/staheri/goatlib) for the implemente
 
 Email me [staheri@cs.utah.edu](MAILTO:staheri@cs.utah.edu) if you want to try this out. I would be more than happy to assist.
 
+## Acknowledgement
+The idea of enhancing the tracer package is adopted from the MIT licensed [work](https://github.com/divan/gotrace) by [Ivan Daniluk](https://github.com/divan).
 
 ## Overview
 ![Overview](overview.png)
