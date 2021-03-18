@@ -9,7 +9,7 @@ cd [path-to-ectgo]
 go build
 ```
 Current build command is not tested and might crash.I am actively working on engineering a nice build for **ectgo**. Please refer to [patch](https://github.com/staheri/ectgo/ectgo_runtime_v1_15_6.patch) for the details of enhancement to the original tracer package.
-Please refer to [goatlib](https://github.com/staheri/goatlib)] for the implemented API of automatic trace collection and storage.
+Please refer to [goatlib](https://github.com/staheri/goatlib) for the implemented API of automatic trace collection and storage.
 
 Email me [staheri@cs.utah.edu](MAILTO:staheri@cs.utah.edu) if you want to try this out. I would be more than happy to assist.
 
@@ -77,6 +77,3 @@ GoTrace uses different libraries and drivers. *[TODO] Use Go Modules/Vendors to 
 #### Database
 
 - MySQL: [Install on Mac](https://dev.mysql.com/doc/mysql-osx-excerpt/5.7/en/osx-installation-pkg.html)
-
-### Build and Usage
-[working on it]
