@@ -2,6 +2,17 @@
 This is a prototype tool for automatic collection of concurrency tracing.
 Details of the idea and design is under review in 6th Workshop on Formal Integrated Development Environment ([F-IDE 2021](https://cister-labs.pt/f-ide2021/))
 
+## Build
+Follow Install for downloading dependencies and building a new runtime. Then execute below program
+```
+cd [path-to-ectgo]
+go build
+```
+Current build command is not tested and might crash.I am actively working on engineering a nice build for **ectgo**. Please refer to [patch](https://github.com/staheri/ectgo/ectgo_runtime_v1_15_6.patch) for the details of enhancement to the original tracer package.
+Please refer to [goatlib](https://github.com/staheri/goatlib)] for the implemented API of automatic trace collection and storage.
+
+Email me [staheri@cs.utah.edu](MAILTO:staheri@cs.utah.edu) if you want to try this out. I would be more than happy to assist.
+
 
 ## Overview
 ![Overview](overview.png)

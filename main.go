@@ -1,25 +1,20 @@
 package main
 
 import (
-	"db"
 	"flag"
 	"fmt"
-	"instrument"
 	"os"
-	"schedtest"
 	"strings"
 	"util"
 	"log"
 	"path"
+	"github.com/staheri/goatlib/db"
+	"github.com/staheri/goatlib/db"
 )
 
-const WORD_CHUNK_LENGTH = 11
-
-var CLOUTPATH = os.Getenv("GOPATH") + "/traces/clx"
-
 var (
-	flagCmd, flagOut, flagSrc, flagX, flagBase, flagApp, dbName, flagDB  string
-	flagCons, flagAtrMode, flagN, flagTO, flagDepth, flagIter            int
+	flagCmd, flagOut, flagSrc, flagX, flagApp, dbName, flagDB  string
+	flagCons , flagN, flagTO, flagDepth, flagIter            int
 	flagArgs                                                             []string
 	flagMT, flagDebug                                                    bool
 	validCategories    = []string{"CHNL", "GCMM", "GRTN", "MISC", "MUTX", "PROC", "SYSC", "WGCV", "SCHD", "BLCK"}
