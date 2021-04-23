@@ -16,3 +16,10 @@
 
 
 goat
+.DS_Store
+ectgo
+*.txt
+
+*native
+*ECT
+*ET
