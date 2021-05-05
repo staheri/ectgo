@@ -1,7 +1,7 @@
-diff --git go.1.15.6/src/internal/trace/parser.go myGo.1.15.6/src/internal/trace/parser.go
-index c371ff3..9457e31 100644
---- go.1.15.6/src/internal/trace/parser.go
-+++ myGo.1.15.6/src/internal/trace/parser.go
+diff --git a/src/internal/trace/parser.go b/src/internal/trace/parser.go
+index c371ff3092..b49fe68e4f 100644
+--- a/src/internal/trace/parser.go
++++ b/src/internal/trace/parser.go
 @@ -1058,7 +1058,19 @@ const (
  	EvUserTaskEnd       = 46 // end of task [timestamp, internal task id, stack]
  	EvUserRegion        = 47 // trace.WithRegion [timestamp, internal task id, mode(0:start, 1:end), stack, name string]
@@ -18,7 +18,7 @@ index c371ff3..9457e31 100644
 +	EvSelect            = 57 // GOAT: select [timestamp, stack, pos]
 +	EvSched             = 58 // GOAT: sched [timestamp, stack, pos, curg, aux]
 +	EvCvWait            = 59 // GOAT: cond var wait [timestamp, stack, cv id]
-+  EvCvSig             = 60 // GOAT: cond var signal [timestamp, stack, cv id, {1: signal, 2: broadcast}]
++	EvCvSig             = 60 // GOAT: cond var signal [timestamp, stack, cv id, {1: signal, 2: broadcast}]
 +	EvCount             = 61
  )
  
@@ -38,17 +38,17 @@ index c371ff3..9457e31 100644
 +	EvSelect:            {"Select", 1011, true, []string{"pos"},nil},// GOAT: select [timestamp, stack, pos]
 +	EvSched:             {"Sched", 1011, true, []string{"pos","curg","aux"},nil}, // GOAT: sched [timestamp, stack, pos, curg, aux]
 +	EvCvWait:            {"CvWait",1011, true, []string{"cvid"},nil}, // GOAT: cond var wait [timestamp, stack, cv id]
-+  	EvCvSig:             {"CvSig",1011, true, []string{"cvid","pos"},nil}, // GOAT: cond var signal [timestamp, stack, cv id, {1: signal, 2: broadcast}]
++	EvCvSig:             {"CvSig",1011, true, []string{"cvid","pos"},nil}, // GOAT: cond var signal [timestamp, stack, cv id, {1: signal, 2: broadcast}]
  }
-diff --git go.1.15.6/src/runtime/chan.go myGo.1.15.6/src/runtime/chan.go
-index d5daa4b..8e174db 100644
---- go.1.15.6/src/runtime/chan.go
-+++ myGo.1.15.6/src/runtime/chan.go
+diff --git a/src/runtime/chan.go b/src/runtime/chan.go
+index d5daa4b13d..dbc20890ca 100644
+--- a/src/runtime/chan.go
++++ b/src/runtime/chan.go
 @@ -30,6 +30,7 @@ const (
  )
  
  type hchan struct {
-+	id       uint64         // goTrace: channel id 
++	id       uint64         // GOAT: channel id
  	qcount   uint           // total data in the queue
  	dataqsiz uint           // size of the circular queue
  	buf      unsafe.Pointer // points to an array of dataqsiz elements
@@ -56,10 +56,10 @@ index d5daa4b..8e174db 100644
  	last  *sudog
  }
  
-+// goTrace
-+var ( 
-+	chID uint64 = 1 // goTrace
-+	evID uint64 = 1 // goTrace
++// GOAT
++var (
++	chID uint64 = 1 // GOAT
++	evID uint64 = 1 // GOAT
 +)
 +
  //go:linkname reflect_makechan reflect.makechan
@@ -69,10 +69,10 @@ index d5daa4b..8e174db 100644
  	c.dataqsiz = uint(size)
  	lockInit(&c.lock, lockRankHchan)
  
-+	// goTrace
-+	chID = atomic.Xadd64(&chID,1) //goTrace: increment channel id
-+	c.id = chID                   //goTrace: assign
-+	traceChMake(c.id)             //goTrace: Channel Make
++	// GOAT
++	chID = atomic.Xadd64(&chID,1) // GOAT: increment channel id
++	c.id = chID                   // GOAT: assign
++	traceChMake(c.id)             // GOAT: Channel Make
 +
  	if debugChan {
  		print("makechan: chan=", c, "; elemsize=", elem.size, "; dataqsiz=", size, "\n")
@@ -81,7 +81,7 @@ index d5daa4b..8e174db 100644
  	}
  
  	if sg := c.recvq.dequeue(); sg != nil {
-+		sg.cid = c.id   // goTrace: set sg.cid
++		sg.cid = c.id   // GOAT: set sg.cid
  		// Found a waiting receiver. We pass the value we want to send
  		// directly to the receiver, bypassing the channel buffer (if any).
  		send(c, sg, ep, func() { unlock(&c.lock) }, 3)
@@ -90,8 +90,8 @@ index d5daa4b..8e174db 100644
  			racerelease(qp)
  		}
 +
-+		evID = atomic.Xadd64(&evID,1)            //goTrace: increment event id
-+		traceChSend(c.id, evID, elem2int(ep),1)  //goTrace: trace send event, pos:1 --> non-blocking, buffer is vacant
++		evID = atomic.Xadd64(&evID,1)            // GOAT: increment event id
++		traceChSend(c.id, evID, elem2int(ep),1)  // GOAT: trace send event, pos:1 --> non-blocking, buffer is vacant
 +
  		typedmemmove(c.elemtype, qp, ep)
  		c.sendx++
@@ -100,12 +100,12 @@ index d5daa4b..8e174db 100644
  	mysg.g = gp
  	mysg.isSelect = false
  	mysg.c = c
-+	// goTrace
-+	mysg.cid = c.id                                  //goTrace
-+	evID = atomic.Xadd64(&evID,1)                    //goTrace
-+	mysg.eventid = atomic.Load64(&evID)              //goTrace
-+	mysg.value = elem2int(ep)                        //goTrace 
-+	traceChSend(c.id, mysg.eventid, mysg.value, 0)  //goTrace: trace send event. pos=0 --> blocked
++	// GOAT
++	mysg.cid = c.id                                  // GOAT
++	evID = atomic.Xadd64(&evID,1)                    // GOAT
++	mysg.eventid = atomic.Load64(&evID)              // GOAT
++	mysg.value = elem2int(ep)                        // GOAT
++	traceChSend(c.id, mysg.eventid, mysg.value, 0)  // GOAT: trace send event. pos=0 --> blocked
 +
  	gp.waiting = mysg
  	gp.param = nil
@@ -118,7 +118,7 @@ index d5daa4b..8e174db 100644
  	// stack shrinking.
  	atomic.Store8(&gp.parkingOnChan, 1)
  	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanSend, traceEvGoBlockSend, 2)
-+	traceChSend(c.id, mysg.eventid, mysg.value, 2)  //goTrace: trace send event. pos=2 --> blockin send (unblocked by an arriving recver)
++	traceChSend(c.id, mysg.eventid, mysg.value, 2)  // GOAT: trace send event. pos=2 --> blockin send (unblocked by an arriving recver)
  	// Ensure the value being sent is kept alive until the
  	// receiver copies it out. The sudog has a pointer to the
  	// stack object, but sudogs aren't considered as roots of the
@@ -127,11 +127,11 @@ index d5daa4b..8e174db 100644
  		}
  	}
 +
-+	evID = atomic.Xadd64(&evID, 1)           //goTrace: trace send event
-+	sg.eventid = atomic.Load64(&evID)        //goTrace: trace send event
-+	sg.cid=c.id                              //goTrace: trace send event
-+	sg.value=elem2int(ep)                    //goTrace: trace send event
-+	traceChSend(c.id, evID, elem2int(ep),3)  //goTrace: trace send event. pos=3 --> non-blocking (recv ready)
++	evID = atomic.Xadd64(&evID, 1)           // GOAT: trace send event
++	sg.eventid = atomic.Load64(&evID)        // GOAT: trace send event
++	sg.cid=c.id                              // GOAT: trace send event
++	sg.value=elem2int(ep)                    // GOAT: trace send event
++	traceChSend(c.id, evID, elem2int(ep),3)  // GOAT: trace send event. pos=3 --> non-blocking (recv ready)
 +
  	if sg.elem != nil {
  		sendDirect(c.elemtype, sg, ep)
@@ -140,7 +140,7 @@ index d5daa4b..8e174db 100644
  	}
  
  	c.closed = 1
-+	traceChClose(c.id) // goTrace: Channel Close
++	traceChClose(c.id) // GOAT: Channel Close
  
  	var glist gList
  
@@ -148,7 +148,7 @@ index d5daa4b..8e174db 100644
  		if raceenabled {
  			raceacquire(c.raceaddr())
  		}
-+		traceChRecv(c.id,0,0,1) // goTrace: trace recv event. pos=1 --> recv on closed (ch_eid:0 --> no matching send)
++		traceChRecv(c.id,0,0,1) // GOAT: trace recv event. pos=1 --> recv on closed (ch_eid:0 --> no matching send)
  		unlock(&c.lock)
  		if ep != nil {
  			typedmemclr(c.elemtype, ep)
@@ -156,7 +156,7 @@ index d5daa4b..8e174db 100644
  		// directly from sender. Otherwise, receive from head of queue
  		// and add sender's value to the tail of the queue (both map to
  		// the same buffer slot because the queue is full).
-+		traceChRecv(c.id, sg.eventid , sg.value,4) // goTrace: trace recv event. pos=4 --> non-blocking recv (directly from waiting sender(unbuf) or from sender's buffer that is blocked on full queue)
++		traceChRecv(c.id, sg.eventid , sg.value,4) // GOAT: trace recv event. pos=4 --> non-blocking recv (directly from waiting sender(unbuf) or from sender's buffer that is blocked on full queue)
  		recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
  		return true, true
  	}
@@ -164,7 +164,7 @@ index d5daa4b..8e174db 100644
  			c.recvx = 0
  		}
  		c.qcount--
-+		traceChRecv(c.id,0,0,2) // goTrace: trace recv event. pos=2 --> buffered channel directly from queue (ch_eid:0 & val=0 --> no matching send)
++		traceChRecv(c.id,0,0,2) // GOAT: trace recv event. pos=2 --> buffered channel directly from queue (ch_eid:0 & val=0 --> no matching send)
  		unlock(&c.lock)
  		return true, true
  	}
@@ -172,7 +172,7 @@ index d5daa4b..8e174db 100644
  	mysg.c = c
  	gp.param = nil
  	c.recvq.enqueue(mysg)
-+	traceChRecv(c.id,0,0,0) // goTrace: trace recv event. pos=0 --> blocked recv (ch_eid=0 & val=0 --> no matching send)
++	traceChRecv(c.id,0,0,0) // GOAT: trace recv event. pos=0 --> blocked recv (ch_eid=0 & val=0 --> no matching send)
  	// Signal to anyone trying to shrink our stack that we're about
  	// to park on a channel. The window between when this G's status
  	// changes and when we set gp.activeStackChans is not safe for
@@ -180,7 +180,7 @@ index d5daa4b..8e174db 100644
  	gopark(chanparkcommit, unsafe.Pointer(&c.lock), waitReasonChanReceive, traceEvGoBlockRecv, 2)
  
  	// someone woke us up
-+	traceChRecv(c.id,mysg.eventid,mysg.value,3) // goTrace: trace recv event. pos=3 --> blocking recv (unblocked by an arriving sender)
++	traceChRecv(c.id,mysg.eventid,mysg.value,3) // GOAT: trace recv event. pos=3 --> blocking recv (unblocked by an arriving sender)
  	if mysg != gp.waiting {
  		throw("G waiting list is corrupted")
  	}
@@ -189,7 +189,7 @@ index d5daa4b..8e174db 100644
  //
  func selectnbsend(c *hchan, elem unsafe.Pointer) (selected bool) {
 +	// GOAT
-+	traceSelect(1) //GOAT: trace select event, pos=1 --> select nb send
++	traceSelect(1) // GOAT: trace select event, pos=1 --> select nb send
  	return chansend(c, elem, false, getcallerpc())
  }
  
@@ -198,7 +198,7 @@ index d5daa4b..8e174db 100644
  //
  func selectnbrecv(elem unsafe.Pointer, c *hchan) (selected bool) {
 +	// GOAT
-+	traceSelect(2) //GOAT: trace select event, pos=2 --> select nb recv
++	traceSelect(2) // GOAT: trace select event, pos=2 --> select nb recv
  	selected, _ = chanrecv(c, elem, false)
  	return
  }
@@ -207,7 +207,7 @@ index d5daa4b..8e174db 100644
  func selectnbrecv2(elem unsafe.Pointer, received *bool, c *hchan) (selected bool) {
  	// TODO(khr): just return 2 values from this function, now that it is in Go.
 +	// GOAT
-+	traceSelect(3) //GOAT: trace select event, pos=3 --> select nb recv 2
++	traceSelect(3) // GOAT: trace select event, pos=3 --> select nb recv 2
  	selected, *received = chanrecv(c, elem, false)
  	return
  }
@@ -216,24 +216,24 @@ index d5daa4b..8e174db 100644
  	raceacquire(chanbuf(c, 0))
  }
 +
-+//goTrace: convert element (pointer) to int
++// GOAT: convert element (pointer) to int
 +func elem2int(elem unsafe.Pointer) uint64{
 +	if elem == nil{
 +		return 0
 +	}
 +	return uint64(*((*int)(elem)))
 +}
-diff --git go.1.15.6/src/runtime/proc.go myGo.1.15.6/src/runtime/proc.go
-index 7fa19d8..036a502 100644
---- go.1.15.6/src/runtime/proc.go
-+++ myGo.1.15.6/src/runtime/proc.go
+diff --git a/src/runtime/proc.go b/src/runtime/proc.go
+index 7fa19d867b..78e77ba026 100644
+--- a/src/runtime/proc.go
++++ b/src/runtime/proc.go
 @@ -313,6 +313,9 @@ func goparkunlock(lock *mutex, reason waitReason, traceEv byte, traceskip int) {
  }
  
  func goready(gp *g, traceskip int) {
-+	if trace.enabled{
-+		traceSched(1,uint64(gp.goid),0) // goTrace: sched event. pos=1 --> goReady, aux:N/A
-+	}
++	//if trace.enabled{
++	//	traceSched(1,uint64(gp.goid),0) // GOAT: sched event. pos=1 --> goReady, aux:N/A
++	//}
  	systemstack(func() {
  		ready(gp, traceskip, true)
  	})
@@ -241,7 +241,7 @@ index 7fa19d8..036a502 100644
  // One round of scheduler: find a runnable goroutine and execute it.
  // Never returns.
  func schedule() {
-+	var aux uint64;
++	//var aux uint64; GOAT: auxiulary variable for sched location
  	_g_ := getg()
  
  	if _g_.m.locks != 0 {
@@ -249,9 +249,9 @@ index 7fa19d8..036a502 100644
  
  	if _g_.m.lockedg != 0 {
  		stoplockedm()
-+		if trace.enabled{
-+			traceSched(2, uint64(_g_.goid),0) // goTrace: sched event. pos=2 --> schedule_g.m.lockedg != 0, aux: N/A
-+		}
++		//if trace.enabled{
++		//	traceSched(2, uint64(_g_.goid),0) // GOAT: sched event. pos=2 --> schedule_g.m.lockedg != 0, aux: N/A
++		//}
  		execute(_g_.m.lockedg.ptr(), false) // Never returns.
  	}
  
@@ -259,13 +259,13 @@ index 7fa19d8..036a502 100644
  			casgstatus(gp, _Gwaiting, _Grunnable)
  			traceGoUnpark(gp, 0)
  			tryWakeP = true
-+			aux = 101 // goTrace: set sched aux. aux=101 --> schedule_goUnpark_traceReader
++			//aux = 101 // GOAT: set sched aux. aux=101 --> schedule_goUnpark_traceReader
  		}
  	}
  	if gp == nil && gcBlackenEnabled != 0 {
  		gp = gcController.findRunnableGCWorker(_g_.m.p.ptr())
  		tryWakeP = tryWakeP || gp != nil
-+		aux = 102 // goTrace: set sched aux. aux=102 --> findRunnableGCWorker
++		//aux = 102 // GOAT: set sched aux. aux=102 --> findRunnableGCWorker
  	}
  	if gp == nil {
  		// Check the global runnable queue once in a while to ensure fairness.
@@ -273,18 +273,18 @@ index 7fa19d8..036a502 100644
  		if _g_.m.p.ptr().schedtick%61 == 0 && sched.runqsize > 0 {
  			lock(&sched.lock)
  			gp = globrunqget(_g_.m.p.ptr(), 1)
-+			aux = 103 // goTrace: set sched aux. aux=103 --> fairness global runq 
++			//aux = 103 // GOAT: set sched aux. aux=103 --> fairness global runq
  			unlock(&sched.lock)
  		}
  	}
  	if gp == nil {
  		gp, inheritTime = runqget(_g_.m.p.ptr())
-+		aux = 104 // goTrace: set sched aux. aux=104 --> runqget
++		//aux = 104 // GOAT: set sched aux. aux=104 --> runqget
  		// We can see gp != nil here even if the M is spinning,
  		// if checkTimers added a local goroutine via goready.
  	}
  	if gp == nil {
-+		aux = 105 // goTrace: set sched aux. aux=105 --> findRunnable (blocked)
++		//aux = 105 // GOAT: set sched aux. aux=105 --> findRunnable (blocked)
  		gp, inheritTime = findrunnable() // blocks until work is available
  	}
  
@@ -292,9 +292,9 @@ index 7fa19d8..036a502 100644
  		startlockedm(gp)
  		goto top
  	}
-+	if trace.enabled{
-+		traceSched(3,uint64(gp.goid),aux) // goTrace: sched event. pos=3 --> schedule with g obtained from {aux} 
-+	}
++	//if trace.enabled{
++	//	traceSched(3,uint64(gp.goid),aux) // GOAT: sched event. pos=3 --> schedule with g obtained from {aux}
++	//}
  
  	execute(gp, inheritTime)
  }
@@ -302,31 +302,31 @@ index 7fa19d8..036a502 100644
  		}
  		gp := _p_.runq[h%uint32(len(_p_.runq))].ptr()
  		if atomic.CasRel(&_p_.runqhead, h, h+1) { // cas-release, commits consume
-+			if trace.enabled{
-+				traceSched(4,uint64(gp.goid),203) // goTrace: sched event. pos=4 --> runqget, aux=203 --> return g from head of q
-+			}
++			//if trace.enabled{
++			//	traceSched(4,uint64(gp.goid),203) // GOAT: sched event. pos=4 --> runqget, aux=203 --> return g from head of q
++			//}
  			return gp, false
  		}
  	}
-diff --git go.1.15.6/src/runtime/runtime2.go myGo.1.15.6/src/runtime/runtime2.go
-index 814364a..5c0c16a 100644
---- go.1.15.6/src/runtime/runtime2.go
-+++ myGo.1.15.6/src/runtime/runtime2.go
+diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
+index 814364aa42..6d9279dac7 100644
+--- a/src/runtime/runtime2.go
++++ b/src/runtime/runtime2.go
 @@ -370,6 +370,10 @@ type sudog struct {
  	waitlink *sudog // g.waiting list or semaRoot
  	waittail *sudog // semaRoot
  	c        *hchan // channel
 +
-+	eventid     uint64 // goTrace: used for correlating send/recv
-+	value       uint64 // goTrace: used for representing value to tracer
-+	cid         uint64 // goTrace: channel id
++	eventid     uint64 // GOAT: used for correlating send/recv
++	value       uint64 // GOAT: used for representing value to tracer
++	cid         uint64 // GOAT: channel id
  }
  
  type libcall struct {
-diff --git go.1.15.6/src/runtime/select.go myGo.1.15.6/src/runtime/select.go
-index 69d2557..1849fb0 100644
---- go.1.15.6/src/runtime/select.go
-+++ myGo.1.15.6/src/runtime/select.go
+diff --git a/src/runtime/select.go b/src/runtime/select.go
+index 69d255712a..1849fb0708 100644
+--- a/src/runtime/select.go
++++ b/src/runtime/select.go
 @@ -169,6 +169,9 @@ func selectgo(cas0 *scase, order0 *uint16, ncases int) (int, bool) {
  	// cases correctly, and they are rare enough not to bother
  	// optimizing (and needing to test).
@@ -370,28 +370,28 @@ index 69d2557..1849fb0 100644
  	selunlock(scases, lockorder)
  	recvOK = false
  	if cas.elem != nil {
-diff --git go.1.15.6/src/runtime/trace.go myGo.1.15.6/src/runtime/trace.go
-index 169b650..ede0997 100644
---- go.1.15.6/src/runtime/trace.go
-+++ myGo.1.15.6/src/runtime/trace.go
+diff --git a/src/runtime/trace.go b/src/runtime/trace.go
+index 169b650eb4..aeb51a667b 100644
+--- a/src/runtime/trace.go
++++ b/src/runtime/trace.go
 @@ -68,7 +68,20 @@ const (
  	traceEvUserTaskEnd       = 46 // end of a task [timestamp, internal task id, stack]
  	traceEvUserRegion        = 47 // trace.WithRegion [timestamp, internal task id, mode(0:start, 1:end), stack, name string]
  	traceEvUserLog           = 48 // trace.Log [timestamp, internal task id, key string id, stack, value string]
 -	traceEvCount             = 49
 +	traceEvChSend            = 49 // GOAT: chan send [timestamp, stack, channel id, ch_event id, value, pos]
-+  	traceEvChRecv            = 50 // GOAT: chan recv [timestamp, stack, channel id, ch_event id, value, pos]
-+  	traceEvChMake            = 51 // GOAT: chan make [timestamp, stack, channel id]
-+  	traceEvChClose           = 52 // GOAT: chan close [timestamp, stack, channel id]
++	traceEvChRecv            = 50 // GOAT: chan recv [timestamp, stack, channel id, ch_event id, value, pos]
++	traceEvChMake            = 51 // GOAT: chan make [timestamp, stack, channel id]
++	traceEvChClose           = 52 // GOAT: chan close [timestamp, stack, channel id]
 +	traceEvWgAdd             = 53 // GOAT: wg add (and inited) [timestamp, stack, wg id, value]
-+  	traceEvWgWait            = 54 // GOAT: wg wait [timestamp, stack, wg id, pos]
-+  	traceEvMuLock            = 55 // GOAT: mu lock [timestamp, stack, mu id, pos]
-+  	traceEvMuUnlock          = 56 // GOAT: mu unlock [timestamp, stack, mu id]
-+  	traceEvSelect            = 57 // GOAT: select [timestamp, stack, pos]
-+  	traceEvSched             = 58 // GOAT: sched [timestamp, stack, pos, curg, aux]
++	traceEvWgWait            = 54 // GOAT: wg wait [timestamp, stack, wg id, pos]
++	traceEvMuLock            = 55 // GOAT: mu lock [timestamp, stack, mu id, pos]
++	traceEvMuUnlock          = 56 // GOAT: mu unlock [timestamp, stack, mu id]
++	traceEvSelect            = 57 // GOAT: select [timestamp, stack, pos]
++	traceEvSched             = 58 // GOAT: sched [timestamp, stack, pos, curg, aux]
 +	traceEvCvWait            = 59 // GOAT: cond var wait [timestamp, stack, cv id]
-+  	traceEvCvSig             = 60 // GOAT: cond var signal [timestamp, stack, cv id, {1: signal, 2: broadcast}]
-+  	traceEvCount             = 61
++	traceEvCvSig             = 60 // GOAT: cond var signal [timestamp, stack, cv id, {1: signal, 2: broadcast}]
++	traceEvCount             = 61
 +
  	// Byte is used but only 6 bits are available for event type.
  	// The remaining 2 bits are used to specify the number of arguments.
@@ -451,10 +451,10 @@ index 169b650..ede0997 100644
 +func TraceCvSig(cvid, typ uint64){
 +  traceEvent(traceEvCvSig, 2, cvid, typ)
 +}
-diff --git go.1.15.6/src/sync/cond.go myGo.1.15.6/src/sync/cond.go
-index b254c93..2e3fa3f 100644
---- go.1.15.6/src/sync/cond.go
-+++ myGo.1.15.6/src/sync/cond.go
+diff --git a/src/sync/cond.go b/src/sync/cond.go
+index b254c9360a..2e3fa3f0e7 100644
+--- a/src/sync/cond.go
++++ b/src/sync/cond.go
 @@ -7,6 +7,12 @@ package sync
  import (
  	"sync/atomic"
@@ -510,10 +510,10 @@ index b254c93..2e3fa3f 100644
  	c.checker.check()
  	runtime_notifyListNotifyAll(&c.notify)
  }
-diff --git go.1.15.6/src/sync/mutex.go myGo.1.15.6/src/sync/mutex.go
-index 3028552..0a03c4c 100644
---- go.1.15.6/src/sync/mutex.go
-+++ myGo.1.15.6/src/sync/mutex.go
+diff --git a/src/sync/mutex.go b/src/sync/mutex.go
+index 3028552f74..f07a4d384e 100644
+--- a/src/sync/mutex.go
++++ b/src/sync/mutex.go
 @@ -14,6 +14,7 @@ import (
  	"internal/race"
  	"sync/atomic"
@@ -526,8 +526,8 @@ index 3028552..0a03c4c 100644
  type Mutex struct {
  	state int32
  	sema  uint32
-+	id    uint64   // goTrace
-+	init  bool     // goTrace
++	id    uint64   // GOAT
++	init  bool     // GOAT
  }
  
  // A Locker represents an object that can be locked and unlocked.
@@ -536,7 +536,7 @@ index 3028552..0a03c4c 100644
  }
  
 +var (
-+	muID  uint64 = 1 // goTrace
++	muID  uint64 = 1 // GOAT
 +)
 +
  const (
@@ -547,26 +547,26 @@ index 3028552..0a03c4c 100644
  			race.Acquire(unsafe.Pointer(m))
  		}
 -		return
-+		// goTrace: increment global id and assign to mu if not inited already
++		// GOAT: increment global id and assign to mu if not inited already
 +		if !m.init{
 +			muID = atomic.AddUint64(&muID,uint64(1))
 +			m.id = muID
 +			m.init = true
-+		} // end goTrace
-+		runtime.TraceMuLock(m.id,1) // goTrace: trace m.Lock event. pos=1 --> mutex is free (unlocked)
++		} // end GOAT
++		runtime.TraceMuLock(m.id,1) // GOAT: trace m.Lock event. pos=1 --> mutex is free (unlocked)
 + 		return
  	}
-+	// goTrace: increment global id and assign to mu if not inited already
++	// GOAT: increment global id and assign to mu if not inited already
 +	if !m.init{
 +		muID = atomic.AddUint64(&muID,uint64(1))
 +		m.id = muID
 +		m.init = true
-+	} // end goTrace
-+	runtime.TraceMuLock(m.id,0) // goTrace: trace m.Lock event. pos=0 --> mutex is locked so BLOCKED
++	} // end GOAT
++	runtime.TraceMuLock(m.id,0) // GOAT: trace m.Lock event. pos=0 --> mutex is locked so BLOCKED
  	// Slow path (outlined so that the fast path can be inlined)
  	m.lockSlow()
 +	// now capture the lock event
-+	runtime.TraceMuLock(m.id,2) // goTrace: trace m.Lock event. pos=2 --> mutex is woken up(unlocked/UNBLOCKED) now lock
++	runtime.TraceMuLock(m.id,2) // GOAT: trace m.Lock event. pos=2 --> mutex is woken up(unlocked/UNBLOCKED) now lock
  }
  
  func (m *Mutex) lockSlow() {
@@ -574,14 +574,14 @@ index 3028552..0a03c4c 100644
  
  	// Fast path: drop lock bit.
  	new := atomic.AddInt32(&m.state, -mutexLocked)
-+	runtime.TraceMuUnlock(m.id) // goTrace: trace m.Unlock event
++	runtime.TraceMuUnlock(m.id) // GOAT: trace m.Unlock event
  	if new != 0 {
  		// Outlined slow path to allow inlining the fast path.
  		// To hide unlockSlow during tracing we skip one extra frame when tracing GoUnblock.
-diff --git go.1.15.6/src/sync/waitgroup.go myGo.1.15.6/src/sync/waitgroup.go
-index e81a493..33d6347 100644
---- go.1.15.6/src/sync/waitgroup.go
-+++ myGo.1.15.6/src/sync/waitgroup.go
+diff --git a/src/sync/waitgroup.go b/src/sync/waitgroup.go
+index e81a493dea..df3859d9ed 100644
+--- a/src/sync/waitgroup.go
++++ b/src/sync/waitgroup.go
 @@ -8,6 +8,7 @@ import (
  	"internal/race"
  	"sync/atomic"
@@ -595,13 +595,13 @@ index e81a493..33d6347 100644
  	// for the sema.
  	state1 [3]uint32
 +
-+	id     uint64 // goTrace
-+	init   bool   // goTrace
++	id     uint64 // GOAT
++	init   bool   // GOAT
  }
  
-+// goTrace - stores unique wg id
++// GOAT - stores unique wg id
 +var(
-+	wgID uint64 = 1 // goTrace
++	wgID uint64 = 1 // GOAT
 +)
 +
  // state returns pointers to the state and sema fields stored within wg.state1.
@@ -611,12 +611,12 @@ index e81a493..33d6347 100644
  // new Add calls must happen after all previous Wait calls have returned.
  // See the WaitGroup example.
  func (wg *WaitGroup) Add(delta int) {
-+	// goTrace: increment global id and assign to wg if not inited already
++	// GOAT: increment global id and assign to wg if not inited already
 +	if !wg.init{
 +		wgID = atomic.AddUint64(&wgID,uint64(1))
 +		wg.id = wgID
 +		wg.init = true
-+	} // end goTrace
++	} // end GOAT
 +
  	statep, semap := wg.state()
  	if race.Enabled {
@@ -625,7 +625,7 @@ index e81a493..33d6347 100644
  		panic("sync: WaitGroup misuse: Add called concurrently with Wait")
  	}
  	if v > 0 || w == 0 {
-+		runtime.TraceWgAdd(wg.id, uint64(delta)) // goTrace: trace wg.Add event
++		runtime.TraceWgAdd(wg.id, uint64(delta)) // GOAT: trace wg.Add event
  		return
  	}
  	// This goroutine has set counter to 0 when waiters > 0.
@@ -633,7 +633,7 @@ index e81a493..33d6347 100644
  				race.Enable()
  				race.Acquire(unsafe.Pointer(wg))
  			}
-+			runtime.TraceWgWait(wg.id,1)  // goTrace: trace wg.Wait event. pos=1 -> unblocking wait
++			runtime.TraceWgWait(wg.id,1)  // GOAT: trace wg.Wait event. pos=1 -> unblocking wait
  			return
  		}
  		// Increment waiters count.
@@ -641,7 +641,7 @@ index e81a493..33d6347 100644
  				// otherwise concurrent Waits will race with each other.
  				race.Write(unsafe.Pointer(semap))
  			}
-+			runtime.TraceWgWait(wg.id,0)  // goTrace: trace wg.Wait event. pos=0 -> blocked
++			runtime.TraceWgWait(wg.id,0)  // GOAT: trace wg.Wait event. pos=0 -> blocked
  			runtime_Semacquire(semap)
  			if *statep != 0 {
  				panic("sync: WaitGroup is reused before previous Wait has returned")
@@ -649,7 +649,7 @@ index e81a493..33d6347 100644
  				race.Enable()
  				race.Acquire(unsafe.Pointer(wg))
  			}
-+			runtime.TraceWgWait(wg.id,2)  // goTrace: trace wg.Wait event. pos=2 -> woken up (unblocked)
++			runtime.TraceWgWait(wg.id,2)  // GOAT: trace wg.Wait event. pos=2 -> woken up (unblocked)
  			return
  		}
  	}
